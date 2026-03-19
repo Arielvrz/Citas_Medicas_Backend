@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "/Users/arielalfaroalvarez/Library/Application Support/Herd/bin/php85",
+            "args": [
+                "/Users/arielalfaroalvarez/Herd/CitasMedicas/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}
