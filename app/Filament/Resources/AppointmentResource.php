@@ -8,7 +8,7 @@ use App\Models\Doctor;
 use App\Models\Schedule;
 use App\Models\Patient;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -47,7 +47,7 @@ class AppointmentResource extends Resource
         return (string) $query->count();
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([

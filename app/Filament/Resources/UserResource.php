@@ -6,7 +6,7 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use App\Models\Doctor;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -46,7 +46,7 @@ class UserResource extends Resource
         return Auth::user()->hasRole('admin');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\PatientResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -17,7 +17,7 @@ class ClinicalRecordRelationManager extends RelationManager
     
     protected static ?string $title = 'Expediente Clínico';
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([

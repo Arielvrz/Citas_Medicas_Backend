@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\DoctorResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -18,7 +18,7 @@ class SchedulesRelationManager extends RelationManager
     
     protected static ?string $title = 'Horarios de Atención';
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([
