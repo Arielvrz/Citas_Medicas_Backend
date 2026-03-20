@@ -28,18 +28,27 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('ClinicaApp') // "Logo de texto"
+            ->favicon(asset('favicon.ico'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#0ea5e9', // Azul médico
             ])
+            // Personaliza el login de manera limpia e inserta un renderhook custom
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
+                fn () => new \Illuminate\Support\HtmlString('<div style="text-align: center; margin-bottom: 1.5rem;"><p style="font-size: 1.125rem; color: #64748b;">Sistema de Gestión Clínica</p></div>')
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            // Desactiva la exploración global para control absoluto, o la deja en blanco
+            // Registrando los 3 widgets requeridos 
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                \App\Filament\Widgets\ClinicaStatsWidget::class,
+                \App\Filament\Widgets\AppointmentsChartWidget::class,
+                \App\Filament\Widgets\UpcomingAppointmentsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
