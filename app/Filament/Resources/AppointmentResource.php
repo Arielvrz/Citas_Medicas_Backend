@@ -23,9 +23,20 @@ class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    protected static ?string $navigationGroup = 'Gestión Clínica';
-    protected static ?int $navigationSort = 1;
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-calendar-days';
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return 1;
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Gestión Clínica';
+    }
 
     public static function getNavigationBadge(): ?string
     {

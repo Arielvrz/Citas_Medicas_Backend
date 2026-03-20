@@ -21,8 +21,15 @@ class DoctorResource extends Resource
 {
     protected static ?string $model = Doctor::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    protected static ?string $navigationGroup = 'Administración';
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-user-group';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Administración';
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
