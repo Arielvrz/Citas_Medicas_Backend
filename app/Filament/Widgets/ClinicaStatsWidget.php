@@ -2,22 +2,22 @@
 
 namespace App\Filament\Widgets;
 
-use Filament\Widgets\StatsOverviewWidget as BaseWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
-use App\Models\Patient;
 use App\Models\Appointment;
 use App\Models\Doctor;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Patient;
 use Carbon\Carbon;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Auth;
 
 class ClinicaStatsWidget extends BaseWidget
 {
-    protected static ?string $pollingInterval = '30s';
-    
+    protected ?string $pollingInterval = '30s';
+
     protected static ?int $sort = 1;
 
     // Configurando la columna a ocupar (ancho completo en 2 col desktop)
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -31,7 +31,7 @@ class ClinicaStatsWidget extends BaseWidget
         // Citas de Hoy (descartando canceladas)
         $citasHoyQuery = Appointment::whereDate('fecha', Carbon::today())
             ->where('estado', '!=', 'cancelada');
-        
+
         if ($isMedico) {
             $citasHoyQuery->where('doctor_id', $doctorId);
         }

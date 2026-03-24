@@ -2,20 +2,22 @@
 
 namespace App\Filament\Widgets;
 
-use Filament\Widgets\ChartWidget;
 use App\Models\Appointment;
-use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentsChartWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Citas por Día — Últimos 14 días';
+    protected ?string $heading = 'Citas por Día — Últimos 14 días';
+
     protected static ?int $sort = 2;
-    protected static ?string $pollingInterval = '60s';
+
+    protected ?string $pollingInterval = '60s';
 
     // Ocupar mitad del layout configurado a nivel Provider
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public ?string $filter = '14';
 
@@ -50,7 +52,7 @@ class AppointmentsChartWidget extends ChartWidget
             ->pluck('count', 'date');
 
         $period = CarbonPeriod::create($startDate, $endDate);
-        
+
         $labels = [];
         $data = [];
 

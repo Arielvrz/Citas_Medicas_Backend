@@ -4,18 +4,20 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
-use App\Models\Doctor;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Filament\Notifications\Notification;
 use Spatie\Permission\Models\Role;
-use Illuminate\Database\Eloquent\Model;
 
 class UserResource extends Resource
 {
@@ -119,32 +121,33 @@ class UserResource extends Resource
                     ->label('Estado Activo'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                
-                Tables\Actions\Action::make('toggle_activo')
-                    ->label(fn(User $record) => $record->activo ? 'Desactivar' : 'Activar')
-                    ->icon(fn(User $record) => $record->activo ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->color(fn(User $record) => $record->activo ? 'danger' : 'success')
+                EditAction::make(),
+
+                Action::make('toggle_activo')
+                    ->label(fn (User $record) => $record->activo ? 'Desactivar' : 'Activar')
+                    ->icon(fn (User $record) => $record->activo ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->color(fn (User $record) => $record->activo ? 'danger' : 'success')
                     ->action(function (User $record) {
                         if (Auth::id() === $record->id) {
                             Notification::make()->title('Acción denegada')->body('No puedes desactivarte a ti mismo.')->danger()->send();
+
                             return;
                         }
-                        $record->update(['activo' => !$record->activo]);
+                        $record->update(['activo' => ! $record->activo]);
                     }),
 
-                Tables\Actions\Action::make('ver_doctor')
+                Action::make('ver_doctor')
                     ->label('Ver Doctor')
                     ->icon('heroicon-o-user-circle')
-                    ->url(fn (User $record) => 
-                        $record->doctor ? DoctorResource::getUrl('view', ['record' => $record->doctor->id]) : null
+                    ->url(fn (User $record) => $record->doctor ? DoctorResource::getUrl('view', ['record' => $record->doctor->id]) : null
                     )
                     ->visible(fn (User $record) => $record->hasRole('medico') && $record->doctor !== null),
 
-                Tables\Actions\DeleteAction::make()
-                    ->action(function (User $record, Tables\Actions\DeleteAction $action) {
+                DeleteAction::make()
+                    ->action(function (User $record, DeleteAction $action) {
                         if (Auth::id() === $record->id) {
                             Notification::make()->title('Opción Inválida')->body('El administrador en sesión no puede borrarse.')->danger()->send();
+
                             return;
                         }
                         $record->delete();

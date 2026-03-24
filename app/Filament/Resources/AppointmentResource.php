@@ -5,19 +5,27 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AppointmentResource\Pages;
 use App\Models\Appointment;
 use App\Models\Doctor;
-use App\Models\Schedule;
 use App\Models\Patient;
+use App\Models\Schedule;
+use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
-use Filament\Notifications\Notification;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
 
 class AppointmentResource extends Resource
 {
@@ -44,6 +52,7 @@ class AppointmentResource extends Resource
         if (Auth::user()->hasRole('medico')) {
             $query->where('doctor_id', Auth::user()->doctor->id ?? 0);
         }
+
         return (string) $query->count();
     }
 
@@ -51,7 +60,7 @@ class AppointmentResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Detalles de la Cita')
+                Section::make('Detalles de la Cita')
                     ->schema([
                         Forms\Components\Select::make('patient_id')
                             ->label('Paciente')
@@ -71,17 +80,20 @@ class AppointmentResource extends Resource
                             )
                             ->searchable()
                             ->live()
-                            ->afterStateUpdated(fn (Forms\Set $set) => $set('schedule_id', null))
+                            ->afterStateUpdated(fn (Set $set) => $set('schedule_id', null))
                             ->required(),
 
                         Forms\Components\Select::make('schedule_id')
                             ->label('Turno')
-                            ->options(function (Forms\Get $get) {
+                            ->options(function (Get $get) {
                                 $doctorId = $get('doctor_id');
-                                if (!$doctorId) return [];
+                                if (! $doctorId) {
+                                    return [];
+                                }
+
                                 return Schedule::where('doctor_id', $doctorId)
                                     ->get()
-                                    ->mapWithKeys(fn ($s) => [$s->id => ucfirst($s->dia_semana) . " ({$s->hora_inicio} a {$s->hora_fin})"]);
+                                    ->mapWithKeys(fn ($s) => [$s->id => ucfirst($s->dia_semana)." ({$s->hora_inicio} a {$s->hora_fin})"]);
                             })
                             ->live()
                             ->required(),
@@ -91,13 +103,13 @@ class AppointmentResource extends Resource
                             ->minDate(now())
                             ->required()
                             ->live()
-                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, $state) {
+                            ->afterStateUpdated(function (Get $get, Set $set, $state) {
                                 $schedule = Schedule::find($get('schedule_id'));
                                 if ($schedule && $state) {
                                     $date = Carbon::parse($state);
                                     $diasMap = [
                                         0 => 'domingo', 1 => 'lunes', 2 => 'martes',
-                                        3 => 'miercoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sabado'
+                                        3 => 'miercoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sabado',
                                     ];
                                     if ($diasMap[$date->dayOfWeek] !== $schedule->dia_semana) {
                                         Notification::make()
@@ -115,14 +127,16 @@ class AppointmentResource extends Resource
                             ->required()
                             ->seconds(false)
                             ->rules([
-                                function (Forms\Get $get, Forms\Components\Component $component) {
+                                function (Get $get, Component $component) {
                                     // Obtenemos el id inyectando la url/contexto desde la vista page si fuera necesario
                                     return function (string $attribute, $value, \Closure $fail) use ($get, $component) {
                                         $scheduleId = $get('schedule_id');
                                         $doctorId = $get('doctor_id');
                                         $fecha = $get('fecha');
 
-                                        if (!$scheduleId || !$doctorId || !$fecha) return;
+                                        if (! $scheduleId || ! $doctorId || ! $fecha) {
+                                            return;
+                                        }
 
                                         $schedule = Schedule::find($scheduleId);
                                         if ($schedule) {
@@ -132,6 +146,7 @@ class AppointmentResource extends Resource
 
                                             if ($sel < $horaInicio || $sel >= $horaFin) {
                                                 $fail("La cita debe agendarse entre las {$horaInicio} y las {$horaFin}.");
+
                                                 return;
                                             }
 
@@ -140,8 +155,8 @@ class AppointmentResource extends Resource
 
                                             $conflict = Appointment::where('doctor_id', $doctorId)
                                                 ->where('fecha', $fecha)
-                                                ->where('hora_inicio', 'like', $sel . '%')
-                                                ->when($recordId, fn($q, $id) => $q->where('id', '!=', $id))
+                                                ->where('hora_inicio', 'like', $sel.'%')
+                                                ->when($recordId, fn ($q, $id) => $q->where('id', '!=', $id))
                                                 ->exists();
 
                                             if ($conflict) {
@@ -154,7 +169,7 @@ class AppointmentResource extends Resource
                                             }
                                         }
                                     };
-                                }
+                                },
                             ]),
 
                         Forms\Components\Select::make('estado')
@@ -247,11 +262,11 @@ class AppointmentResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()
+                ViewAction::make(),
+                EditAction::make()
                     ->visible(fn ($record) => Auth::user()->hasRole(['admin', 'asistente'])),
-                
-                Tables\Actions\Action::make('completar')
+
+                Action::make('completar')
                     ->label('Completar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -259,7 +274,7 @@ class AppointmentResource extends Resource
                     ->action(fn (Appointment $record) => $record->update(['estado' => 'completada']))
                     ->visible(fn (Appointment $record) => Auth::user()->hasRole('medico') && $record->doctor?->user_id === Auth::id() && $record->estado !== 'completada'),
 
-                Tables\Actions\Action::make('cancelar')
+                Action::make('cancelar')
                     ->label('Cancelar')
                     ->icon('heroicon-o-backspace')
                     ->color('danger')
@@ -267,7 +282,7 @@ class AppointmentResource extends Resource
                     ->action(fn (Appointment $record) => $record->update(['estado' => 'cancelada']))
                     ->visible(fn (Appointment $record) => Auth::user()->hasRole(['admin', 'asistente']) && $record->estado !== 'cancelada'),
 
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->visible(fn ($record) => Auth::user()->hasRole('admin')),
             ]);
     }
@@ -275,10 +290,11 @@ class AppointmentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
-        
+
         if (Auth::user()->hasRole('medico')) {
             $query->where('doctor_id', Auth::user()->doctor?->id ?? 0);
         }
+
         return $query;
     }
 

@@ -5,16 +5,27 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PatientResource\Pages;
 use App\Filament\Resources\PatientResource\RelationManagers;
 use App\Models\Patient;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
+use Filament\Infolists;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
-use Filament\Notifications\Notification;
 
 class PatientResource extends Resource
 {
@@ -39,7 +50,7 @@ class PatientResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Datos Personales')
+                Section::make('Datos Personales')
                     ->schema([
                         Forms\Components\TextInput::make('nombre')
                             ->required()
@@ -62,8 +73,8 @@ class PatientResource extends Resource
                             ->unique(ignoreRecord: true)
                             ->nullable(),
                     ])->columns(2),
-                    
-                Forms\Components\Section::make('Datos de Contacto')
+
+                Section::make('Datos de Contacto')
                     ->schema([
                         Forms\Components\TextInput::make('telefono')
                             ->required()
@@ -96,7 +107,7 @@ class PatientResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('edad')
                     ->label('Edad')
-                    ->getStateUsing(fn (Patient $record) => $record->fecha_nacimiento ? $record->fecha_nacimiento->age . ' años' : '-'),
+                    ->getStateUsing(fn (Patient $record) => $record->fecha_nacimiento ? $record->fecha_nacimiento->age.' años' : '-'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -129,29 +140,29 @@ class PatientResource extends Resource
                                 $data['registro_hasta'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
-                    })
+                    }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\BulkAction::make('exportar')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    ForceDeleteBulkAction::make(),
+                    RestoreBulkAction::make(),
+                    BulkAction::make('exportar')
                         ->label('Exportar Seleccionados')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->action(function (Collection $records) {
                             $ids = $records->pluck('id')->implode(', ');
                             Notification::make()
                                 ->title('Exportación iniciada')
                                 ->body("Exportando ids: $ids")
                                 ->success()
                                 ->send();
-                        })
+                        }),
                 ]),
             ]);
     }
@@ -160,7 +171,7 @@ class PatientResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Información Personal')
+                Section::make('Información Personal')
                     ->schema([
                         Infolists\Components\TextEntry::make('nombre')->icon('heroicon-m-user'),
                         Infolists\Components\TextEntry::make('apellido')->icon('heroicon-m-user'),
@@ -171,8 +182,8 @@ class PatientResource extends Resource
                         Infolists\Components\TextEntry::make('email')->icon('heroicon-m-envelope'),
                         Infolists\Components\TextEntry::make('direccion')->icon('heroicon-m-map-pin')->columnSpanFull(),
                     ])->columns(3),
-                    
-                Infolists\Components\Section::make('Expediente Clínico')
+
+                Section::make('Expediente Clínico')
                     ->schema([
                         Infolists\Components\TextEntry::make('clinicalRecord.tipo_sangre')
                             ->label('Tipo de Sangre')
@@ -192,8 +203,8 @@ class PatientResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2)
                     ->description(fn (Patient $record) => $record->clinicalRecord ? '' : 'Sin expediente registrado'),
-                    
-                Infolists\Components\Section::make('Historial de Citas (Últimas 5)')
+
+                Section::make('Historial de Citas (Últimas 5)')
                     ->schema([
                         Infolists\Components\RepeatableEntry::make('appointments')
                             ->label('')
@@ -203,8 +214,8 @@ class PatientResource extends Resource
                                 Infolists\Components\TextEntry::make('estado')->badge(),
                             ])
                             ->columns(3)
-                            ->getStateUsing(fn (Patient $record) => $record->appointments()->latest('fecha')->take(5)->get())
-                    ])
+                            ->getStateUsing(fn (Patient $record) => $record->appointments()->latest('fecha')->take(5)->get()),
+                    ]),
             ]);
     }
 
@@ -232,7 +243,7 @@ class PatientResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
-    
+
     public static function canViewAny(): bool
     {
         return Auth::user()->can('viewAny', static::getModel());
@@ -243,17 +254,17 @@ class PatientResource extends Resource
         return Auth::user()->can('create', static::getModel());
     }
 
-    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canEdit(Model $record): bool
     {
         return Auth::user()->can('update', $record);
     }
 
-    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canDelete(Model $record): bool
     {
         return Auth::user()->can('delete', $record);
     }
-    
-    public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
+
+    public static function canView(Model $record): bool
     {
         return Auth::user()->can('view', $record);
     }

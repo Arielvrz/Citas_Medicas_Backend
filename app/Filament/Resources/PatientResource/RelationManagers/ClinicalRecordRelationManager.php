@@ -2,19 +2,20 @@
 
 namespace App\Filament\Resources\PatientResource\RelationManagers;
 
+use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class ClinicalRecordRelationManager extends RelationManager
 {
     protected static string $relationship = 'clinicalRecord';
-    
+
     protected static ?string $title = 'Expediente Clínico';
 
     public function form(Schema $form): Schema
@@ -49,18 +50,18 @@ class ClinicalRecordRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->visible(fn ($livewire) => ! $livewire->getOwnerRecord()->clinicalRecord()->exists()),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
                 //
             ]);
     }
-    
-    public static function canViewForRecord(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): bool
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return Auth::user()->hasRole(['admin', 'medico']);
     }

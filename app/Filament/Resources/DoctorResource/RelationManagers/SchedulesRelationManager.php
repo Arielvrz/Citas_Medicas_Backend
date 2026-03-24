@@ -2,20 +2,24 @@
 
 namespace App\Filament\Resources\DoctorResource\RelationManagers;
 
+use Carbon\Carbon;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\Rules\Unique;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Unique;
 
 class SchedulesRelationManager extends RelationManager
 {
     protected static string $relationship = 'schedules';
-    
+
     protected static ?string $title = 'Horarios de Atención';
 
     public function form(Schema $form): Schema
@@ -35,7 +39,7 @@ class SchedulesRelationManager extends RelationManager
                     ])
                     ->required()
                     ->unique(
-                        table: 'schedules', 
+                        table: 'schedules',
                         column: 'dia_semana',
                         ignoreRecord: true,
                         modifyRuleUsing: fn (Unique $rule, RelationManager $livewire) => $rule->where('doctor_id', $livewire->getOwnerRecord()->id)
@@ -43,12 +47,12 @@ class SchedulesRelationManager extends RelationManager
                     ->validationMessages([
                         'unique' => 'El médico ya tiene asignado un bloque laboral para este día de la semana.',
                     ]),
-                    
+
                 Forms\Components\TimePicker::make('hora_inicio')
                     ->label('Hora de Inicio (Apertura)')
                     ->seconds(false)
                     ->required(),
-                    
+
                 Forms\Components\TimePicker::make('hora_fin')
                     ->label('Hora de Cierre')
                     ->seconds(false)
@@ -83,7 +87,8 @@ class SchedulesRelationManager extends RelationManager
                     ->getStateUsing(function ($record) {
                         $inicio = Carbon::parse($record->hora_inicio);
                         $fin = Carbon::parse($record->hora_fin);
-                        return $fin->diffInHours($inicio) . ' Horas';
+
+                        return $fin->diffInHours($inicio).' Horas';
                     })
                     ->badge()
                     ->color('info'),
@@ -92,18 +97,18 @@ class SchedulesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->visible(fn () => Auth::user()->hasRole('admin')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                EditAction::make()
                     ->visible(fn () => Auth::user()->hasRole('admin')),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->visible(fn () => Auth::user()->hasRole('admin')),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->visible(fn () => Auth::user()->hasRole('admin')),
                 ]),
             ]);

@@ -5,16 +5,20 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\DoctorResource\Pages;
 use App\Filament\Resources\DoctorResource\RelationManagers;
 use App\Models\Doctor;
+use Carbon\Carbon;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
+use Filament\Infolists;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Infolists;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class DoctorResource extends Resource
 {
@@ -39,7 +43,7 @@ class DoctorResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Cuenta de Usuario')
+                Section::make('Cuenta de Usuario')
                     ->description('Credenciales generadas para el login del especialista.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -62,7 +66,7 @@ class DoctorResource extends Resource
                     ])->columns(3)
                     ->visibleOn('create'),
 
-                Forms\Components\Section::make('Datos Profesionales')
+                Section::make('Datos Profesionales')
                     ->schema([
                         Forms\Components\Select::make('especialidad')
                             ->options([
@@ -124,7 +128,7 @@ class DoctorResource extends Resource
                 Tables\Columns\ToggleColumn::make('activo')
                     ->label('Activo')
                     ->sortable()
-                    ->disabled(fn () => !Auth::user()->hasRole('admin')), // Toggle visual solo funcional para admin
+                    ->disabled(fn () => ! Auth::user()->hasRole('admin')), // Toggle visual solo funcional para admin
 
                 Tables\Columns\TextColumn::make('appointments_count')
                     ->counts('appointments')
@@ -147,12 +151,12 @@ class DoctorResource extends Resource
                     ->label('Estado Activo'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -161,7 +165,7 @@ class DoctorResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Información del Médico')
+                Section::make('Información del Médico')
                     ->schema([
                         Infolists\Components\TextEntry::make('user.name')->label('Nombre Completo')->icon('heroicon-m-user'),
                         Infolists\Components\TextEntry::make('especialidad')->icon('heroicon-m-star')->badge(),
@@ -172,7 +176,7 @@ class DoctorResource extends Resource
                             ->label('Estado de Cuenta'),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Horarios de Atención')
+                Section::make('Horarios de Atención')
                     ->schema([
                         Infolists\Components\RepeatableEntry::make('schedules')
                             ->label('')
@@ -181,22 +185,22 @@ class DoctorResource extends Resource
                                 Infolists\Components\TextEntry::make('hora_inicio')->label('Inicio')->time('H:i'),
                                 Infolists\Components\TextEntry::make('hora_fin')->label('Fin')->time('H:i'),
                             ])
-                            ->columns(3)
+                            ->columns(3),
                     ]),
 
-                Infolists\Components\Section::make('Próximas Citas')
+                Section::make('Próximas Citas')
                     ->schema([
                         Infolists\Components\RepeatableEntry::make('appointments')
                             ->label('')
                             ->schema([
                                 Infolists\Components\TextEntry::make('fecha')->date('d/m/Y'),
                                 Infolists\Components\TextEntry::make('hora_inicio')->time('H:i'),
-                                Infolists\Components\TextEntry::make('patient.nombre')->label('Paciente')->getStateUsing(fn ($record) => $record->patient->nombre . ' ' . $record->patient->apellido),
+                                Infolists\Components\TextEntry::make('patient.nombre')->label('Paciente')->getStateUsing(fn ($record) => $record->patient->nombre.' '.$record->patient->apellido),
                                 Infolists\Components\TextEntry::make('estado')->badge(),
                             ])
                             ->columns(4)
-                            ->getStateUsing(fn (Doctor $record) => $record->appointments()->whereDate('fecha', '>=', Carbon::today())->orderBy('fecha')->orderBy('hora_inicio')->take(5)->get())
-                    ])
+                            ->getStateUsing(fn (Doctor $record) => $record->appointments()->whereDate('fecha', '>=', Carbon::today())->orderBy('fecha')->orderBy('hora_inicio')->take(5)->get()),
+                    ]),
             ]);
     }
 
@@ -216,10 +220,10 @@ class DoctorResource extends Resource
             'edit' => Pages\EditDoctor::route('/{record}/edit'),
         ];
     }
-    
+
     // Delegation of Permissions based on requirement:
     // Solo admin puede crear, editar y eliminar médicos. Todos ven (listado e infolist).
-    
+
     public static function canViewAny(): bool
     {
         return Auth::user()->can('viewAny', static::getModel());
@@ -239,7 +243,7 @@ class DoctorResource extends Resource
     {
         return Auth::user()->can('delete', $record);
     }
-    
+
     public static function canView(Model $record): bool
     {
         return Auth::user()->can('view', $record);
